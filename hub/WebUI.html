@@ -1,0 +1,37 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>돌봄온 음성 콘솔</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; }
+  button { font-size: 18px; padding: 10px 16px; }
+  #log { margin-top: 12px; font-size: 18px; }
+</style>
+<h1>돌봄온 음성 콘솔</h1>
+<button id="rec">말하기 시작</button>
+<div id="log"></div>
+<script>
+const btn = document.getElementById('rec');
+const log = document.getElementById('log');
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const sr = new SpeechRecognition();
+sr.lang = 'ko-KR'; sr.interimResults = false; sr.continuous = false;
+
+function speak(text){
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ko-KR'; speechSynthesis.speak(u);
+}
+
+btn.onclick = () => { sr.start(); btn.disabled = true; btn.textContent = '듣는 중…'; };
+sr.onresult = async (e) => {
+  const text = e.results[0][0].transcript;
+  log.innerText = '당신: ' + text;
+  const r = await fetch('http://localhost:8080/api/voice', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ text })
+  });
+  const data = await r.json();
+  log.innerText += '\n돌봄온: ' + data.reply;
+  speak(data.reply);
+};
+sr.onend = () => { btn.disabled = false; btn.textContent = '말하기 시작'; };
+</script>
